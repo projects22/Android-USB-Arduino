@@ -1,0 +1,135 @@
+﻿Build1=Default,b4a.GraphicsFirstSteps
+File1=main.bal
+File2=scroll.bal
+FileGroup1=Default Group
+FileGroup2=Default Group
+Group=Default Group
+Library1=core
+Library2=felusbserial
+Library3=usb
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: http://www.b4x.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="5" android:targetSdkVersion="26"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~'End of default text.~\n~
+NumberOfFiles=2
+NumberOfLibraries=3
+NumberOfModules=0
+Version=10.2
+@EndOfDesignText@
+#Region  Project Attributes 
+	#ApplicationLabel: Arduino IO
+	#VersionCode: 1
+	#VersionName: 2
+	'SupportedOrientations possible values: unspecified, landscape or portrait.
+	#SupportedOrientations: unspecified
+	#CanInstallToExternalStorage: False
+#End Region
+
+#Region  Activity Attributes 
+	#FullScreen: False
+	#IncludeTitle: True
+#End Region
+
+'Activity module
+Sub Process_Globals
+	Private usbserial As felUsbSerial
+	Private manager As UsbManager
+	Dim out1, out2, out3, out4 As Byte
+	Dim temp As Float
+End Sub
+
+Sub Globals
+	Private btnConnect As Button
+	Private Label1 As Label
+	Private tbtn1, tbtn2, tbtn3, tbtn4 As ToggleButton
+	Private in1, in2, in3, in4 As ImageView
+	Private analog1, analog2 As EditText
+	Private lblTemp As Label
+	Private temp1 As EditText
+	Private ScrollView1 As ScrollView
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	If FirstTime Then
+		manager.Initialize
+	End If
+	
+	Activity.LoadLayout("scroll")		' load the layout
+	ScrollView1.Panel.Height = 1100dip
+	ScrollView1.Height=100%y
+	ScrollView1.Width=100%x
+	ScrollView1.Panel.LoadLayout("main")
+End Sub
+
+Sub btnConnect_Click
+	If manager.GetDevices.Length = 0 Then
+		Label1.Text = "No connected usb devices."
+	Else
+		Dim device As UsbDevice = manager.GetDevices(0) 'the device
+		If manager.HasPermission(device) = False Then
+			manager.RequestPermission(device)
+		Else
+			usbserial.Initialize("serial", device, -1)
+			usbserial.BaudRate = 9600
+			usbserial.DataBits = usbserial.DATA_BITS_8
+			usbserial.StartReading
+			Label1.Text = "Connected"
+		End If
+	End If
+End Sub
+
+Private Sub serial_DataAvailable (Buffer() As Byte)		'60 bytes received
+	Dim a1, a2 As Int
+
+
+	If Buffer.Length > 9 Then
+		'Log(Buffer(8) & "  1")
+		'Log(Buffer(9))
+		If Buffer(0) = 1 Then in1.Color=(Colors.Green) Else in1.Color=(Colors.Red)
+		If Buffer(1) = 1 Then in2.Color=(Colors.Green) Else in2.Color=(Colors.Red)
+		If Buffer(2) = 1 Then in3.Color=(Colors.Green) Else in3.Color=(Colors.Red)
+		If Buffer(3) = 1 Then in4.Color=(Colors.Green) Else in4.Color=(Colors.Red)
+		
+		If Buffer(4) < 0 Then a1=Buffer(4)+255 Else a1=Buffer(4)
+		If Buffer(6) < 0 Then a2=Buffer(6)+255 Else a2=Buffer(6)
+		analog1.Text = NumberFormat((a1 + Buffer(5)*256)*5/1024,1,3) & " V"
+		analog2.Text = NumberFormat((a2 + Buffer(7)*256)*5/1024,1,3) & " V"
+		
+		If Buffer(8) < 0 Then a1=Buffer(8)+255 Else a1=Buffer(8)
+		temp = (a1 + Buffer(9)*256) / 100.0
+		temp1.Text = NumberFormat(temp,1,1) & " °C"
+		
+	End If
+	send
+End Sub
+
+Sub send
+	Dim outB(1) As Byte
+	
+	outB(0)=out1 + out2*2 + out3*4 + out4*8
+	usbserial.Write(outB)
+End Sub
+
+Sub tbtn1_CheckedChange(Checked As Boolean)
+	If Checked Then out1=1 Else out1=0
+End Sub
+
+Sub tbtn2_CheckedChange(Checked As Boolean)
+	If Checked Then out2=1 Else out2=0
+End Sub
+
+Sub tbtn3_CheckedChange(Checked As Boolean)
+	If Checked Then out3=1 Else out3=0
+End Sub
+
+Sub tbtn4_CheckedChange(Checked As Boolean)
+	If Checked Then out4=1 Else out4=0
+End Sub
+
+Sub Activity_Resume
+	
+End Sub
+
+Sub Activity_Pause (UserClosed As Boolean)
+
+End Sub
+
+
+
